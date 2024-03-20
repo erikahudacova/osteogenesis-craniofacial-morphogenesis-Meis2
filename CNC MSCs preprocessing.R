@@ -16,9 +16,7 @@ library(writexl)
 #open subsetted mesenchymal cluster
 seurat_mesenchymal <- readRDS("seurat_mesenchymal_clusters.rds")
 
-
 #subset mitochondrial content and removal of debris cluster
- subset mitochondrial content and removal of debris cluster}
 seurat_mesenchymal_mt <- subset(seurat_mesenchymal, subset = percent.mt < 10)
 seurat_mesenchymal_mt  <- SetIdent(seurat_mesenchymal_mt, value = "nicknames")
 seurat_filtered <- subset(seurat_mesenchymal_mt , idents= "Neuro", invert = TRUE)
@@ -32,8 +30,6 @@ DefaultAssay(seurat_filtered) <- "RNA"
 experiment.list <- SplitObject(seurat_filtered, split.by = "Sample")
 
 # run normalization for each sample
-
-#r cell cycle genes}
 
 for (i in 1:length(experiment.list)) {
   experiment.list[[i]] <- SCTransform(experiment.list[[i]], assay = "RNA", vst.flavor="v2", verbose = FALSE, return.only.var.genes = TRUE, vars.to.regress = c("G2M.Score","S.Score"))}
@@ -87,16 +83,16 @@ experiment <- RunPCA(experiment.integrated, npcs = 50, verbose = FALSE, features
 experiment<- RunUMAP(experiment, reduction = "pca", verbose = TRUE,features = all.genes)
 experiment<- FindNeighbors(experiment, reduction = "pca", dims = 1:41, verbose = TRUE)
 
-
-#clustering resolutions
-
-### bring you data after finding Neighbors
-
-#pick your resolution
+#clustering resolutions, bring you data after finding Neighbors and pick your resolution
 
 experiment<- FindClusters(experiment, resolution = 0.6, verbose = FALSE,)
 
-#DEG analysis
+#normalize and scale rna
+DefaultAssay(experiment) <- "RNA"
+experiment <- NormalizeData(experiment, verbose = TRUE)
+experiment <- ScaleData(experiment, verbose = TRUE)
+
+#DEG marker analysis
 experiment <- SetIdent(experiment,value = "integrated_snn_res.0.5")
 DefaultAssay(experiment) <- "SCT"
 experiment <- PrepSCTFindMarkers(experiment)
@@ -108,15 +104,7 @@ markers0.5<- FindAllMarkers(experiment,
                             assay = "SCT",
                             test.use = "wilcox")
 
-
-#normalize and scale rna
-
-DefaultAssay(experiment) <- "RNA"
-experiment <- NormalizeData(experiment, verbose = TRUE)
-experiment <- ScaleData(experiment, verbose = TRUE)
-
 write.xlsx(markers0.6,"marker0.6sct.xlsx", rowNames = TRUE)
-
 
 saveRDS(experiment,file = "seurat_mesenchymal_final.rds")
 
